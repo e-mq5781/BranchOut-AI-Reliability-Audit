@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS prompts (
     prompt_number INTEGER NOT NULL,
     prompt_text TEXT NOT NULL,
     raw_output TEXT,
-    expected_behaviour TEXT,
+    score INTEGER NOT NULL,
     source TEXT,
     notes TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,

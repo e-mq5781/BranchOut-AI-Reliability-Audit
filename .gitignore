@@ -1,1 +1,11 @@
+# Don't commit actual database
 database/prompts.db
+
+# Ignore virtual environment
+.venv/
+
+# Ignore python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

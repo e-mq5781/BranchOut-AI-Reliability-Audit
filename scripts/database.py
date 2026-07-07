@@ -1,11 +1,12 @@
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-import sqlite3
 
 DB_PATH = Path(__file__).parent.parent / "database" / "prompts.db"
 
 
 # Dataclasses
+
 
 @dataclass(slots=True)
 class Prompt:
@@ -48,6 +49,7 @@ class Conversation:
 
 
 # Row mappers
+
 
 def _row_to_prompt(row: sqlite3.Row) -> Prompt:
     return Prompt(
@@ -94,6 +96,7 @@ def _row_to_conversation(row: sqlite3.Row) -> Conversation:
 
 # DB connection
 
+
 def connect():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -103,6 +106,7 @@ def connect():
 
 # Categories
 
+
 def add_category(name: str, description: str = ""):
     with connect() as conn:
         conn.execute(
@@ -111,6 +115,26 @@ def add_category(name: str, description: str = ""):
             VALUES (?, ?)
             """,
             (name, description),
+        )
+
+
+# This will delete all prompts associated with the category first to avoid foreign key constraint error.
+# All prompts of the category will be deleted(and will not be moved into another category) Might have to edit so that prompts are moved to a different category.
+def delete_category(category_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            DELETE FROM prompts
+            WHERE conversation_id = ?
+            """,
+            (category_id,),
+        )
+        conn.execute(
+            """
+            DELETE FROM categories
+            WHERE category_id = ?
+            """,
+            (category_id,),
         )
 
 
@@ -128,6 +152,7 @@ def list_categories() -> list[Category]:
 
 
 # Models
+
 
 def add_model(name: str, provider: str, version: str, notes: str | None = None):
     with connect() as conn:
@@ -159,6 +184,7 @@ def list_models() -> list[Model]:
 
 
 # Conversations
+
 
 def add_conversation(
     started_at: str,
@@ -209,7 +235,27 @@ def list_conversations() -> list[Conversation]:
     return [_row_to_conversation(r) for r in rows]
 
 
+def delete_conversation(conversation_id: int):
+    with connect() as conn:
+        # delete prompts first to avoid foreign key constraint error
+        conn.execute(
+            """
+            DELETE FROM prompts
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        )
+        conn.execute(
+            """
+            DELETE FROM conversations
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        )
+
+
 # Prompts
+
 
 def add_prompt(prompt: Prompt):
     with connect() as conn:
@@ -324,4 +370,3 @@ def update_expected_behaviour(prompt_id: int, behaviour: str):
             """,
             (behaviour, prompt_id),
         )
-

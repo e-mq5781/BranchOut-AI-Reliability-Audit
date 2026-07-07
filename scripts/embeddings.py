@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
-from pathlib import Path
 import numpy as np
+import torch
 
 MODEL = "BAAI/bge-large-en-v1.5"
 
@@ -8,7 +8,7 @@ class Embedder:
     def __init__(self):
         self.model = SentenceTransformer(
                 MODEL,
-                device="cuda"
+                device="cuda" if torch.cuda.is_available() else "cpu"
                 )
 
     def encode(self, texts): # encode a list
@@ -20,7 +20,7 @@ class Embedder:
                 )
 
 def generate_prompt_embeddings(prompts):
-    texts = [p.prompt_text for prompt in prompts] # get text of prompt
+    texts = [p.prompt_text for p in prompts] # get text of prompt
     
     embeddings = Embedder().encode(texts) # encode prompts
     np.save("embeddings/prompts.npy", embeddings) # save to embeddings directory
@@ -40,3 +40,11 @@ def generate_response_embeddings(prompts):
     embeddings = Embedder().encode(texts) # encode responses
 
     np.save("embeddings/responses.npy", embeddings)
+
+if __name__ == "__main__":
+    from database import get_prompts
+
+    prompts = get_prompts()
+
+    generate_prompt_embeddings(prompts)
+    generate_response_embeddings(prompts)

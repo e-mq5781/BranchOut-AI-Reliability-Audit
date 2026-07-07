@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
 
-DB_PATH = Path(__file__).parent.parent.parent / "database" / "prompts.db"
+DB_PATH = Path(__file__).parent.parent / "database" / "prompts.db"
 
 
 # Dataclasses

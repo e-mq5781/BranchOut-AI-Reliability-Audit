@@ -25,6 +25,15 @@ CREATE TABLE IF NOT EXISTS conversations (
     notes TEXT
 );
 
+-- Label definitions
+CREATE TABLE IF NOT EXISTS labels (
+    label_id INTEGER PRIMARY KEY,
+    label_name TEXT NOT NULL UNIQUE,
+    status BOOLEAN -- 1.0 is a pass, 0.0 is any of the fails
+    severity INTEGER,
+    description TEXT,
+);
+
 -- Prompts table
 CREATE TABLE IF NOT EXISTS prompts (
     prompt_id INTEGER PRIMARY KEY,
@@ -34,29 +43,8 @@ CREATE TABLE IF NOT EXISTS prompts (
     prompt_number INTEGER NOT NULL,
     prompt_text TEXT NOT NULL,
     raw_output TEXT,
+    label_id INTEGER,
 
-    -- Rubric scores
-    produced_requested_output REAL,
-    correct_length REAL,
-    answered_all_tasks REAL,
-    requested_style REAL,
-    factual_correctness REAL,
-    no_contradictions REAL,
-    necessary_information REAL,
-    grounded_claims REAL,
-    no_hallucinations REAL,
-    logical_organization REAL,
-    easy_to_understand REAL,
-    appropriate_detail REAL,
-    appropriate_terminology REAL,
-    confidence_calibration REAL,
-    appropriate_refusal REAL,
-    safe_information REAL,
-    helpful_examples REAL,
-    anticipated_followups REAL,
-    alternatives REAL,
-    suggested_next_steps REAL,
-    relevant_context REAL,
 
     -- Metadata
     source TEXT,
@@ -70,7 +58,10 @@ CREATE TABLE IF NOT EXISTS prompts (
         REFERENCES models(model_id),
 
     FOREIGN KEY(conversation_id)
-        REFERENCES conversations(conversation_id)
+        REFERENCES conversations(conversation_id),
+
+    FOREIGN KEY(label_id)
+        REFERENCES labels(label_id),
 );
 
 -- Indexes
@@ -88,6 +79,12 @@ ON prompts(category_id, model_id);
 
 CREATE INDEX IF NOT EXISTS idx_prompt_created
 ON prompts(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_labels_status
+ON labels(status);
+
+CREATE INDEX IF NOT EXISTS idx_prompt_label
+ON prompts(label_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_prompt_number
 ON prompts(conversation_id, prompt_number);

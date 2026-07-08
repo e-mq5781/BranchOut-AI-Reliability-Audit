@@ -2,6 +2,8 @@ import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
+
 DB_PATH = Path(__file__).parent.parent / "database" / "prompts.db"
 
 
@@ -388,6 +390,20 @@ def delete_prompt(prompt_id: int):
         )
 
 
+def search_prompts(keyword: str) -> list[Prompt]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM prompts
+            WHERE prompt_text LIKE ?
+            """,
+            (f"%{keyword}%",),
+        ).fetchall()
+
+    return [_row_to_prompt(r) for r in rows]
+
+
 def update_expected_behaviour(prompt_id: int, behaviour: str):
     with connect() as conn:
         conn.execute(
@@ -471,3 +487,9 @@ def update_prompt_notes(prompt_id: int, notes: str):
             """,
             (notes, prompt_id),
         )
+
+
+def export_prompts_to_csv(path: str):
+    with connect() as conn:
+        df = pd.read_sql("SELECT * FROM prompts", conn)
+        df.to_csv(path, index=False)

@@ -1,11 +1,12 @@
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-import sqlite3
 
 DB_PATH = Path(__file__).parent.parent / "database" / "prompts.db"
 
 
 # Dataclasses
+
 
 @dataclass(slots=True)
 class Prompt:
@@ -48,6 +49,7 @@ class Conversation:
 
 
 # Row mappers
+
 
 def _row_to_prompt(row: sqlite3.Row) -> Prompt:
     return Prompt(
@@ -94,6 +96,7 @@ def _row_to_conversation(row: sqlite3.Row) -> Conversation:
 
 # DB connection
 
+
 def connect():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -103,6 +106,7 @@ def connect():
 
 # Categories
 
+
 def add_category(name: str, description: str = ""):
     with connect() as conn:
         conn.execute(
@@ -111,6 +115,39 @@ def add_category(name: str, description: str = ""):
             VALUES (?, ?)
             """,
             (name, description),
+        )
+
+
+# updates both the name and description
+def update_category(category_id: int, name: str, description: str = ""):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE categories
+            SET category_name = ?, description = ?
+            WHERE category_id = ?
+            """,
+            (name, description, category_id),
+        )
+
+
+# This will delete all prompts associated with the category first to avoid foreign key constraint error.
+# All prompts of the category will be deleted(and will not be moved into another category) Might have to edit so that prompts are moved to a different category.
+def delete_category(category_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            DELETE FROM prompts
+            WHERE conversation_id = ?
+            """,
+            (category_id,),
+        )
+        conn.execute(
+            """
+            DELETE FROM categories
+            WHERE category_id = ?
+            """,
+            (category_id,),
         )
 
 
@@ -128,6 +165,7 @@ def list_categories() -> list[Category]:
 
 
 # Models
+
 
 def add_model(name: str, provider: str, version: str, notes: str | None = None):
     with connect() as conn:
@@ -158,7 +196,23 @@ def list_models() -> list[Model]:
     return [_row_to_model(r) for r in rows]
 
 
+# you don't have to provide new notes but it will be deleted if set to None
+def update_model(
+    model_id: int, name: str, provider: str, version: str, notes: str | None = None
+):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE models
+            SET model_name = ?, provider = ?, model_version = ?, notes = ?
+            WHERE model_id = ?
+            """,
+            (name, provider, version, notes, model_id),
+        )
+
+
 # Conversations
+
 
 def add_conversation(
     started_at: str,
@@ -209,7 +263,27 @@ def list_conversations() -> list[Conversation]:
     return [_row_to_conversation(r) for r in rows]
 
 
+def delete_conversation(conversation_id: int):
+    with connect() as conn:
+        # delete prompts first to avoid foreign key constraint error
+        conn.execute(
+            """
+            DELETE FROM prompts
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        )
+        conn.execute(
+            """
+            DELETE FROM conversations
+            WHERE conversation_id = ?
+            """,
+            (conversation_id,),
+        )
+
+
 # Prompts
+
 
 def add_prompt(prompt: Prompt):
     with connect() as conn:
@@ -325,3 +399,75 @@ def update_expected_behaviour(prompt_id: int, behaviour: str):
             (behaviour, prompt_id),
         )
 
+
+# update the prompt and its response(if you edit the prompt it is expected to have a new response)
+def update_prompt_and_response(prompt_id: int, prompt: str, response: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET prompt_text = ?, raw_output = ?
+            WHERE prompt_id = ?
+            """,
+            (prompt, response, prompt_id),
+        )
+
+
+def update_prompt_category(prompt_id: int, category: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET category_id = ?
+            WHERE prompt_id = ?
+            """,
+            (category, prompt_id),
+        )
+
+
+def update_prompt_model(prompt_id: int, model_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET model_id = ?
+            WHERE prompt_id = ?
+            """,
+            (model_id, prompt_id),
+        )
+
+
+def update_prompt_conversation(prompt_id: int, conversation_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET conversation_id = ?
+            WHERE prompt_id = ?
+            """,
+            (conversation_id, prompt_id),
+        )
+
+
+def update_prompt_source(prompt_id: int, source: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET source = ?
+            WHERE prompt_id = ?
+            """,
+            (source, prompt_id),
+        )
+
+
+def update_prompt_notes(prompt_id: int, notes: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET notes = ?
+            WHERE prompt_id = ?
+            """,
+            (notes, prompt_id),
+        )

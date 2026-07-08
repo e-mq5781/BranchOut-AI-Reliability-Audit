@@ -118,6 +118,19 @@ def add_category(name: str, description: str = ""):
         )
 
 
+# updates both the name and description
+def update_category(category_id: int, name: str, description: str = ""):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE categories
+            SET category_name = ?, description = ?
+            WHERE category_id = ?
+            """,
+            (name, description, category_id),
+        )
+
+
 # This will delete all prompts associated with the category first to avoid foreign key constraint error.
 # All prompts of the category will be deleted(and will not be moved into another category) Might have to edit so that prompts are moved to a different category.
 def delete_category(category_id: int):
@@ -181,6 +194,21 @@ def list_models() -> list[Model]:
         ).fetchall()
 
     return [_row_to_model(r) for r in rows]
+
+
+# you don't have to provide new notes but it will be deleted if set to None
+def update_model(
+    model_id: int, name: str, provider: str, version: str, notes: str | None = None
+):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE models
+            SET model_name = ?, provider = ?, model_version = ?, notes = ?
+            WHERE model_id = ?
+            """,
+            (name, provider, version, notes, model_id),
+        )
 
 
 # Conversations
@@ -369,4 +397,77 @@ def update_expected_behaviour(prompt_id: int, behaviour: str):
             WHERE prompt_id = ?
             """,
             (behaviour, prompt_id),
+        )
+
+
+# update the prompt and its response(if you edit the prompt it is expected to have a new response)
+def update_prompt_and_response(prompt_id: int, prompt: str, response: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET prompt_text = ?, raw_output = ?
+            WHERE prompt_id = ?
+            """,
+            (prompt, response, prompt_id),
+        )
+
+
+def update_prompt_category(prompt_id: int, category: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET category_id = ?
+            WHERE prompt_id = ?
+            """,
+            (category, prompt_id),
+        )
+
+
+def update_prompt_model(prompt_id: int, model_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET model_id = ?
+            WHERE prompt_id = ?
+            """,
+            (model_id, prompt_id),
+        )
+
+
+def update_prompt_conversation(prompt_id: int, conversation_id: int):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET conversation_id = ?
+            WHERE prompt_id = ?
+            """,
+            (conversation_id, prompt_id),
+        )
+
+
+def update_prompt_source(prompt_id: int, source: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET source = ?
+            WHERE prompt_id = ?
+            """,
+            (source, prompt_id),
+        )
+
+
+def update_prompt_notes(prompt_id: int, notes: str):
+    with connect() as conn:
+        conn.execute(
+            """
+            UPDATE prompts
+            SET notes = ?
+            WHERE prompt_id = ?
+            """,
+            (notes, prompt_id),
         )

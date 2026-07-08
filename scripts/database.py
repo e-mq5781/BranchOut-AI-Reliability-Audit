@@ -18,7 +18,8 @@ class Prompt:
 
     prompt_text: str
     raw_output: str | None = None
-    expected_behaviour: str | None = None
+    label_id: int | None = None
+
     source: str | None = None
     notes: str | None = None
 
@@ -47,6 +48,13 @@ class Conversation:
     source: str | None = None
     notes: str | None = None
 
+@dataclass(slots=True)
+class Label:
+    label_id: int
+    label_name: str
+    status: bool
+    severity: int
+    description: str | None = None
 
 # Row mappers
 
@@ -60,11 +68,10 @@ def _row_to_prompt(row: sqlite3.Row) -> Prompt:
         prompt_number=row["prompt_number"],
         prompt_text=row["prompt_text"],
         raw_output=row["raw_output"],
-        expected_behaviour=row["expected_behaviour"],
+        label_id=row["label_id"],
         source=row["source"],
         notes=row["notes"],
     )
-
 
 def _row_to_category(row: sqlite3.Row) -> Category:
     return Category(
@@ -93,6 +100,15 @@ def _row_to_conversation(row: sqlite3.Row) -> Conversation:
         notes=row["notes"],
     )
 
+
+def _row_to_label(row: sqlite3.Row) -> Label:
+    return Label(
+        label_id=row["label_id"],
+        label_name=row["label_name"],
+        status=bool(row["status"]),
+        severity=row["severity"],
+        description=row["description"],
+    )
 
 # DB connection
 
@@ -162,6 +178,62 @@ def list_categories() -> list[Category]:
         ).fetchall()
 
     return [_row_to_category(r) for r in rows]
+
+
+# Labels
+
+
+def add_label(
+    name: str,
+    status: bool,
+    severity: int,
+    description: str = ""
+):
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO labels(
+                label_name,
+                status,
+                severity,
+                description
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                name,
+                status,
+                severity,
+                description,
+            ),
+        )
+
+
+def list_labels() -> list[Label]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM labels
+            ORDER BY severity DESC
+            """
+        ).fetchall()
+
+    return [_row_to_label(r) for r in rows]
+
+
+def get_label(label_id: int) -> Label | None:
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT *
+            FROM labels
+            WHERE label_id = ?
+            """,
+            (label_id,),
+        ).fetchone()
+
+    return _row_to_label(row) if row else None
 
 
 # Models
@@ -297,7 +369,7 @@ def add_prompt(prompt: Prompt):
                 prompt_number,
                 prompt_text,
                 raw_output,
-                expected_behaviour,
+                label_id,
                 source,
                 notes
             )
@@ -311,7 +383,7 @@ def add_prompt(prompt: Prompt):
                 prompt.prompt_number,
                 prompt.prompt_text,
                 prompt.raw_output,
-                prompt.expected_behaviour,
+                prompt.label_id,
                 prompt.source,
                 prompt.notes,
             ),
@@ -377,6 +449,22 @@ def prompts_by_model(model: str) -> list[Prompt]:
     return [_row_to_prompt(r) for r in rows]
 
 
+def prompts_by_label(label: str) -> list[Prompt]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT p.*
+            FROM prompts p
+            JOIN labels l
+                ON p.label_id = l.label_id
+            WHERE l.label_name = ?
+            """,
+            (label,),
+        ).fetchall()
+
+    return [_row_to_prompt(r) for r in rows]
+
+
 def delete_prompt(prompt_id: int):
     with connect() as conn:
         conn.execute(
@@ -388,15 +476,15 @@ def delete_prompt(prompt_id: int):
         )
 
 
-def update_expected_behaviour(prompt_id: int, behaviour: str):
+def update_prompt_label(prompt_id: int, label_id: int):
     with connect() as conn:
         conn.execute(
             """
             UPDATE prompts
-            SET expected_behaviour = ?
+            SET label_id = ?
             WHERE prompt_id = ?
             """,
-            (behaviour, prompt_id),
+            (label_id, prompt_id),
         )
 
 

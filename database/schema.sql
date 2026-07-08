@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS labels (
     label_name TEXT NOT NULL UNIQUE,
     status BOOLEAN -- 1.0 is a pass, 0.0 is any of the fails
     severity INTEGER,
-    description TEXT,
+    description TEXT
 );
 
 -- Prompts table
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS prompts (
         REFERENCES conversations(conversation_id),
 
     FOREIGN KEY(label_id)
-        REFERENCES labels(label_id),
+        REFERENCES labels(label_id)
 );
 
 -- Indexes

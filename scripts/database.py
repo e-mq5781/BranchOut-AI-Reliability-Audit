@@ -160,7 +160,7 @@ def delete_category(category_id: int):
         conn.execute(
             """
             DELETE FROM prompts
-            WHERE conversation_id = ?
+            WHERE category_id = ?
             """,
             (category_id,),
         )
@@ -235,6 +235,19 @@ def get_label(label_id: int) -> Label | None:
         ).fetchone()
 
     return _row_to_label(row) if row else None
+
+
+def search_labels_labelname(labelname: str) -> list[Label]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM labels
+            WHERE label_name LIKE ?
+            """,
+            (f"%{labelname}%",),
+        ).fetchall()
+    return [_row_to_label(r) for r in rows]
 
 
 # Models
@@ -516,7 +529,7 @@ def update_prompt_and_response(prompt_id: int, prompt: str, response: str):
         )
 
 
-def update_prompt_category(prompt_id: int, category: str):
+def update_prompt_category(prompt_id: int, category_id: int):
     with connect() as conn:
         conn.execute(
             """
@@ -524,7 +537,7 @@ def update_prompt_category(prompt_id: int, category: str):
             SET category_id = ?
             WHERE prompt_id = ?
             """,
-            (category, prompt_id),
+            (category_id, prompt_id),
         )
 
 

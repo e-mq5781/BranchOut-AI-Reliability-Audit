@@ -390,19 +390,6 @@ def delete_prompt(prompt_id: int):
         )
 
 
-def search_labels_labelname(labelname: str) -> list[Prompt]:
-    with connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM labels
-            WHERE label_name = ?
-            """,
-            (labelname,),
-        ).fetchall()
-    return [_row_to_prompt(r) for r in rows]
-
-
 def search_prompts(keyword: str) -> list[Prompt]:
     with connect() as conn:
         rows = conn.execute(

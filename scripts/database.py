@@ -249,6 +249,17 @@ def search_labels_labelname(labelname: str) -> list[Label]:
         ).fetchall()
     return [_row_to_label(r) for r in rows]
 
+def search_labels_status(status: bool) -> list[Label]:
+    with connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM labels
+            WHERE status = ?
+            """,
+            (status,)
+        ).fetchall()
+    return [_row_to_label(r) for r in rows]
 
 # Models
 

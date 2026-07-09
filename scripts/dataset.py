@@ -2,10 +2,29 @@ import os
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import torch
+from torch.utils.data import Dataset, DataLoader
 
 from database import connect
+
+
+class PromptDataset(Dataset):
+    def __init__(self, embeddings, labels):
+        self.embeddings = embeddings
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return (
+                torch.tensor(self.embeddings[idx], dtype=torch.float32),
+                torch.tensor(self.labels[idx], dtype=torch.long)
+        )
+
 
 def load_prompts():
     with connect() as conn:
@@ -13,30 +32,54 @@ def load_prompts():
 
     return df
 
-def split_dataset(df):
-    temp_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-    # test_size = 0.25 since temp_df is 80% of the original dataset
-    train_df, val_df = train_test_split(temp_df, test_size=0.25, random_state=42)
-    return train_df, test_df, val_df
+
+def load_embeddings(path):
+    data = np.load(path)
+
+    return data["ids"], data["embeddings"]
 
 
-def export_dataset(df, path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    df.to_csv(path, index=False)
-    print(f"Exported dataset to {path}")
+def build_datasets(embedding_path):
+    df = load_prompts()
+    ids, embeddings = load_embeddings(embedding_path)
+    df = df.set_index("prompt_id").loc[ids]
+    labels = df["label_id"].to_numpy()
 
+    train_x, test_x, train_y, test_y = train_test_split(
+            embeddings,
+            labels,
+            test_size=0.2,
+            random_state=42
+    )
+
+    train_x, val_x, train_y, val_y = train_test_split(
+            train_x,
+            train_y,
+            test_size=0.25,
+            random_state=42
+    )
+
+    return (
+            PromptDataset(train_x, train_y),
+            PromptDataset(val_x, val_y),
+            PromptDataset(test_x, test_y)
+    )
+
+
+def build_dataloaders(embedding_path, batch_size=32):
+    train, val, test = build_datasets(embedding_path)
+
+    return (
+            DataLoader(train, batch_size=batch_size, shuffle=True),
+            DataLoader(val, batch_size=batch_size),
+            DataLoader(test, batch_size=batch_size)
+    )
 
 if __name__ == "__main__":
-    df = load_prompts()
+    train_loader, val_loader, test_loader = build_dataloaders(
+        "../embeddings/prompts.npz"
+    )
 
-    train_df, test_df, val_df = split_dataset(df)
-
-    PROJECT_ROOT = Path(__file__).resolve().parent.parent
-    DATASETS_DIR = PROJECT_ROOT / "datasets"
-    outputs = {
-        DATASETS_DIR / "train.csv": train_df,
-        DATASETS_DIR / "val.csv": val_df,
-        DATASETS_DIR / "test.csv": test_df,
-    }
-    for path, dataset_df in outputs.items():
-        export_dataset(dataset_df, path)
+    print(f"Train batches: {len(train_loader)}")
+    print(f"Validation batches: {len(val_loader)}")
+    print(f"Test batches: {len(test_loader)}")

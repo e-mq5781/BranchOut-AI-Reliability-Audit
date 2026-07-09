@@ -1,6 +1,8 @@
 from sentence_transformers import SentenceTransformer
+from pathlib import Path
 import numpy as np
 import torch
+
 
 MODEL = "BAAI/bge-large-en-v1.5"
 
@@ -21,9 +23,10 @@ class Embedder:
 
 def generate_prompt_embeddings(prompts):
     texts = [p.prompt_text for p in prompts] # get text of prompt
-    
+   
+    ids = [p.prompt_id for p in prompts] # get prompt ids
     embeddings = Embedder().encode(texts) # encode prompts
-    np.save("embeddings/prompts.npy", embeddings) # save to embeddings directory
+    save_embeddings("prompts.npz", ids, embeddings) # save to embeddings directory
 
 def generate_response_embeddings(prompts):
     texts = [
@@ -37,9 +40,18 @@ def generate_response_embeddings(prompts):
             for p in prompts
             ] # get text of prompt and response out of prompts (i'm sure that having multi-line strings will have no impact whatsoever
 
+    ids = [p.prompt_id for p in prompts]
     embeddings = Embedder().encode(texts) # encode responses
+    save_embeddings("responses.npz", ids, embeddings)
 
-    np.save("embeddings/responses.npy", embeddings)
+def save_embeddings(filename, ids, embeddings):
+    Path("embeddings").mkdir(exist_ok=True)
+
+    np.savez(
+        Path("embeddings") / filename,
+        ids=np.asarray(ids),
+        embeddings=embeddings,
+    )
 
 if __name__ == "__main__":
     from database import get_prompts

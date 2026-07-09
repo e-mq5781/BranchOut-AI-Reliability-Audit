@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class promptGrader(nn.Module):
+class PromptClassifier(nn.Module):
     def __init__(self, input_size, num_rubric_classes, dropout):
         super().__init__()
         self.mySeq = nn.Sequential(
@@ -19,5 +19,6 @@ class promptGrader(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(128, num_rubric_classes)
         )
+
     def forward(self, x):
         return self.mySeq(x)

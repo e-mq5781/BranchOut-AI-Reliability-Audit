@@ -43,7 +43,7 @@ def build_datasets(embedding_path):
     df = load_prompts()
     ids, embeddings = load_embeddings(embedding_path)
     df = df.set_index("prompt_id").loc[ids]
-    labels = df["label_id"].to_numpy()
+    labels = df["label_id"].to_numpy() - 1 # for cross entropy loss
 
     train_x, test_x, train_y, test_y = train_test_split(
             embeddings,

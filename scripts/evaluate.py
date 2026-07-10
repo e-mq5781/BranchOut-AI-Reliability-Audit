@@ -1,8 +1,8 @@
 import torch
 from dataset import build_dataloaders
 
-def get_test_loader():
-    _, _, test_loader = build_dataloaders("embeddings/prompts.npz", batch_size=32)
+def get_test_loader(batch_size):
+    _, _, test_loader = build_dataloaders("embeddings/prompts.npz", batch_size=batch_size)
 
     return test_loader
 

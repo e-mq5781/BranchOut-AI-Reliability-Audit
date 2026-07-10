@@ -21,6 +21,7 @@ class Trainer:
         
         self.device = device
 
+
     def train_epoch(self):
         self.model.train()
 
@@ -105,18 +106,28 @@ class Trainer:
             correct / total,
         )
 
-    def fit(self, epochs):
+    def fit(self, epochs, patience):
         best_acc = 0.0
+        counter = 0
+
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=patience)
 
         epoch_bar = tqdm(range(epochs), desc="Epochs")
 
-        for _ in epoch_bar:
+        for epoch in epoch_bar:
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate()
+            scheduler.step(val_loss)
 
             if val_acc > best_acc:
                 best_acc = val_acc
-                self.save_checkpoint("checkpoints/best.pt")
+                counter = 0
+                self.save_checkpoint(epoch, best_acc, "checkpoints/best.pt")
+            else:
+                counter += 1
+
+            if counter >= patience:
+                break
 
 
             epoch_bar.set_postfix(
@@ -126,9 +137,14 @@ class Trainer:
             val_acc=f"{val_acc:.3f}",
 )
 
-    def save_checkpoint(self, path):
+    def save_checkpoint(self, epoch, best_acc, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         torch.save(
-                self.model.state_dict(),
+                {
+                    "model_state": self.model.state_dict(),
+                    "optimizer_state": self.optimizer.state_dict(),
+                    "epoch": epoch,
+                    "best_acc": best_acc,
+                },
                 path,
         )

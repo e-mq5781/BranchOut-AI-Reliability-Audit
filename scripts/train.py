@@ -33,4 +33,4 @@ if __name__ == "__main__":
         device="cuda" if torch.cuda.is_available() else "cpu",
     )
 
-    trainer.fit(epochs=30)
+    trainer.fit(epochs=30, patience=5)

@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 CREATE TABLE IF NOT EXISTS labels (
     label_id INTEGER PRIMARY KEY,
     label_name TEXT NOT NULL UNIQUE,
-    status BOOLEAN -- 1.0 is a pass, 0.0 is any of the fails
+    status BOOLEAN, -- 1.0 is a pass, 0.0 is any of the fails
     severity INTEGER,
     description TEXT
 );
@@ -87,4 +87,4 @@ CREATE INDEX IF NOT EXISTS idx_prompt_label
 ON prompts(label_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_prompt_number
-ON prompts(conversation_id, prompt_number);
+ON prompts(conversation_id, prompt_number, model_id);

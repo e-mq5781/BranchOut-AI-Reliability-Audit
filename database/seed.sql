@@ -12,7 +12,7 @@ VALUES
 (1, 'GPT-5.5', 'OpenAI', '5.5', NULL),
 (2, 'Qwen Studio 3.7 Plus', 'Alibaba', '3.7', NULL);
 
-INSERT INTO labels
+INSERT INTO labels(label_id, label_name, status, severity, description)
 VALUES
 (1, 'pass', TRUE, 100, 'Performs expected behaviour'),
 (2, 'partial', FALSE, 40, 'Performs part of the expected behaviour correctly, but fails elsewhere'),

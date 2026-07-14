@@ -43,26 +43,32 @@ def build_datasets(embedding_path):
     df = load_prompts()
     ids, embeddings = load_embeddings(embedding_path)
     df = df.set_index("prompt_id").loc[ids]
-    labels = df["label_id"].to_numpy() - 1 # for cross entropy loss
+
+    assert len(df) == len(ids)
+    assert np.all(df.index.to_numpy() == ids)
+
+    labels = df["label_id"].to_numpy() - 1
 
     train_x, test_x, train_y, test_y = train_test_split(
-            embeddings,
-            labels,
-            test_size=0.2,
-            random_state=42
+        embeddings,
+        labels,
+        test_size=0.2,
+        random_state=42,
+        stratify=labels,
     )
 
     train_x, val_x, train_y, val_y = train_test_split(
-            train_x,
-            train_y,
-            test_size=0.25,
-            random_state=42
+        train_x,
+        train_y,
+        test_size=0.25,
+        random_state=42,
+        stratify=train_y,
     )
 
     return (
-            PromptDataset(train_x, train_y),
-            PromptDataset(val_x, val_y),
-            PromptDataset(test_x, test_y)
+        PromptDataset(train_x, train_y),
+        PromptDataset(val_x, val_y),
+        PromptDataset(test_x, test_y),
     )
 
 
@@ -76,9 +82,7 @@ def build_dataloaders(embedding_path, batch_size=32):
     )
 
 if __name__ == "__main__":
-    train_loader, val_loader, test_loader = build_dataloaders(
-        "../embeddings/prompts.npz"
-    )
+    train_loader, val_loader, test_loader = build_dataloaders(Path(__file__).parent.parent / "embeddings" / "prompts.npz")
 
     print(f"Train batches: {len(train_loader)}")
     print(f"Validation batches: {len(val_loader)}")

@@ -6,9 +6,13 @@ from nn.layers import PromptClassifier
 from nn.trainer import Trainer
 from nn.losses import get_loss
 
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
 if __name__ == "__main__":
     train_loader, val_loader, _ = build_dataloaders(
-            "embeddings/prompts.npz"
+            ROOT / "embeddings" / "prompts.npz"
     )
 
     model = PromptClassifier(
@@ -21,7 +25,7 @@ if __name__ == "__main__":
 
     optimizer = Adam(
             model.parameters(),
-            lr=1e-3,
+            lr=3e-4,
     )
 
     trainer = Trainer(

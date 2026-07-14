@@ -3,7 +3,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-
+ROOT = Path(__file__).resolve().parent.parent
+EMBEDDINGS_DIR = ROOT / "embeddings"
 MODEL = "BAAI/bge-large-en-v1.5"
 
 class Embedder:
@@ -45,10 +46,10 @@ def generate_response_embeddings(prompts):
     save_embeddings("responses.npz", ids, embeddings)
 
 def save_embeddings(filename, ids, embeddings):
-    Path("embeddings").mkdir(exist_ok=True)
+    EMBEDDINGS_DIR.mkdir(parents=True, exist_ok=True)
 
     np.savez(
-        Path("embeddings") / filename,
+        EMBEDDINGS_DIR / filename,
         ids=np.asarray(ids),
         embeddings=embeddings,
     )

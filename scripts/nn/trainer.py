@@ -2,6 +2,8 @@ import torch
 from tqdm.auto import tqdm
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+
 class Trainer:
     def __init__(
             self,
@@ -49,7 +51,7 @@ class Trainer:
 
             self.optimizer.step()
 
-            total_loss += loss.item()
+            total_loss += loss.item() * y.size(0)
 
             predictions = logits.argmax(dim=1)
 
@@ -62,7 +64,7 @@ class Trainer:
             )
 
         return (
-                total_loss / len(self.train_loader),
+                total_loss / total,
                 correct / total,
         )
 
@@ -89,7 +91,7 @@ class Trainer:
 
             loss = self.criterion(logits, y)
 
-            total_loss += loss.item()
+            total_loss += loss.item() * y.size(0)
 
             predictions = logits.argmax(dim=1)
 
@@ -102,7 +104,7 @@ class Trainer:
             )
 
         return (
-            total_loss / len(self.val_loader),
+            total_loss / total,
             correct / total,
         )
 
@@ -113,18 +115,27 @@ class Trainer:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=patience)
 
         epoch_bar = tqdm(range(epochs), desc="Epochs")
+        epochs_total=0
 
         for epoch in epoch_bar:
+            epochs_total += 1
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate()
             scheduler.step(val_loss)
 
-            if val_acc > best_acc:
+            if val_acc > best_acc + 1e-3:
                 best_acc = val_acc
                 counter = 0
-                self.save_checkpoint(epoch, best_acc, "checkpoints/best.pt")
+                self.save_checkpoint(epoch, best_acc, ROOT / "models" / "prompt_predictor" / "best.pt")
+                tqdm.write(
+                        f"Epoch {epoch+1}: new best validation accuracy {best_acc:.3f}"
+                )
             else:
                 counter += 1
+                tqdm.write(
+                        f"Epoch {epoch + 1}: no improvement "
+                        f"({counter}/{patience})"
+                    )
 
             if counter >= patience:
                 break
@@ -135,7 +146,16 @@ class Trainer:
             train_acc=f"{train_acc:.3f}",
             val_loss=f"{val_loss:.4f}",
             val_acc=f"{val_acc:.3f}",
-)
+            best=f"{best_acc:.3f}",
+            )
+
+        self.save_checkpoint(
+            epochs_total,
+            best_acc,
+            ROOT / "models" / "prompt_predictor" / "final.pt",
+        )
+
+
 
     def save_checkpoint(self, epoch, best_acc, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)

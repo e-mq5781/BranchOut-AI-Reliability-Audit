@@ -1,5 +1,6 @@
 # Don't commit actual database
 database/prompts.db
+raw_data/
 
 # Ignore virtual environment
 .venv/

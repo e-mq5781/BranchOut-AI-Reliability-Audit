@@ -11,7 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from database import connect
 
 
-class PromptDataset(Dataset):
+class EmbeddingDataset(Dataset):
     def __init__(self, embeddings, labels):
         self.embeddings = embeddings
         self.labels = labels
@@ -54,7 +54,7 @@ def build_datasets(embedding_path):
         labels,
         test_size=0.2,
         random_state=42,
-        stratify=labels,
+        #stratify=labels, # not possible with small dataset
     )
 
     train_x, val_x, train_y, val_y = train_test_split(
@@ -62,13 +62,13 @@ def build_datasets(embedding_path):
         train_y,
         test_size=0.25,
         random_state=42,
-        stratify=train_y,
+        # stratify=train_y, # not possible with small dataset
     )
 
     return (
-        PromptDataset(train_x, train_y),
-        PromptDataset(val_x, val_y),
-        PromptDataset(test_x, test_y),
+        EmbeddingDataset(train_x, train_y),
+        EmbeddingDataset(val_x, val_y),
+        EmbeddingDataset(test_x, test_y),
     )
 
 

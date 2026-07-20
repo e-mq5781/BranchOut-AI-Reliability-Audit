@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class PromptClassifier(nn.Module):
+class EmbeddingClassifier(nn.Module):
     def __init__(self, input_size, num_rubric_classes, dropout):
         super().__init__()
         self.mySeq = nn.Sequential(

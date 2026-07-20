@@ -13,6 +13,7 @@ class Trainer:
             train_loader,
             val_loader,
             device,
+            checkpoint_dir
     ):
         self.model = model.to(device)
         self.optimizer = optimizer
@@ -22,6 +23,8 @@ class Trainer:
         self.val_loader = val_loader
         
         self.device = device
+
+        self.checkpoint_dir = checkpoint_dir
 
 
     def train_epoch(self):
@@ -126,7 +129,7 @@ class Trainer:
             if val_acc > best_acc + 1e-3:
                 best_acc = val_acc
                 counter = 0
-                self.save_checkpoint(epoch, best_acc, ROOT / "models" / "prompt_predictor" / "best.pt")
+                self.save_checkpoint(epoch, best_acc, self.checkpoint_dir / "best.pt")
                 tqdm.write(
                         f"Epoch {epoch+1}: new best validation accuracy {best_acc:.3f}"
                 )
@@ -152,7 +155,7 @@ class Trainer:
         self.save_checkpoint(
             epochs_total,
             best_acc,
-            ROOT / "models" / "prompt_predictor" / "final.pt",
+            self.checkpoint_dir / "final.pt",
         )
 
 
